@@ -11,20 +11,16 @@ def hadoopVersion = "2.8.5"
 
 group = "de.haw.tweetspace"
 version = "0.1.0-SNAPSHOT"
-mainClassName = "de.haw.tweetspace.Reccomender"
+mainClassName = "de.haw.tweetspace.Recommender"
 
 dependencies {
     compile "org.scala-lang:scala-library:$scalaVersion.+"
     compile "org.apache.spark:spark-core_$scalaVersion:$sparkVersion"
     compile "org.apache.spark:spark-sql_$scalaVersion:$sparkVersion"
-    compile "org.apache.spark:spark-mllib_$scalaVersion:$sparkVersion"
     compile "org.apache.hadoop:hadoop-client:$hadoopVersion"
-    compile "org.apache.hadoop:hadoop-aws:$hadoopVersion"
     compile "com.typesafe.scala-logging:scala-logging_$scalaVersion:3.9.0"
     compile 'ch.qos.logback:logback-classic:1.2.3'
-    compile 'org.slf4j:log4j-over-slf4j:1.7.7'
     compile 'com.typesafe:config:1.3.3'
-    compile 'com.github.meandor:mobius-chair:0.3.0'
 
     testCompile "org.scalatest:scalatest_$scalaVersion:3.0.5"
 }
