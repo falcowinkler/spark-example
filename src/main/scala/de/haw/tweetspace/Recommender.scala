@@ -4,6 +4,8 @@ import com.typesafe.scalalogging.LazyLogging
 
 object Recommender extends LazyLogging {
   def main(args: Array[String]): Unit = {
-    print("Hello from scala")
+    val fs = HDFSHelper.defaultFS()
+    logger.info("fs initialized: " + fs)
+    fs.close()
   }
 }
