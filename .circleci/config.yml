@@ -1,0 +1,42 @@
+version: 2
+jobs:
+  checkout:
+    working_directory: ~/repo
+    docker:
+      - image: alpine/git:latest
+    steps:
+      - checkout
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - ./repo
+
+  dependencies:
+    docker:
+      - image: circleci/openjdk:8-jdk
+    working_directory: ~/repo
+    steps:
+      - attach_workspace:
+          at: ~/
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "build.gradle" }}
+            - v1-dependencies-
+      - run: gradle dependencies
+      - save_cache:
+          paths:
+            - ~/.gradle
+          key: v1-dependencies-{{ checksum "build.gradle" }}
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - ./.gradle
+
+  unit-test:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run: ./gradlew check
