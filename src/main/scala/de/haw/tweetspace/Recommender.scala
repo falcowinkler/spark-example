@@ -2,6 +2,7 @@ package de.haw.tweetspace
 
 import com.typesafe.scalalogging.LazyLogging
 import org.apache.hadoop.fs.Path
+import  org.apache.spark.sql.execution.datasources.FileFormat
 
 object Recommender extends LazyLogging {
   def main(args: Array[String]): Unit = {
