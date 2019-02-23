@@ -1,6 +1,7 @@
 package de.haw.tweetspace
 
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest._
 
 class UserDataFunctionsSpec extends FeatureSpec with Matchers with BeforeAndAfterAll {
@@ -16,13 +17,14 @@ class UserDataFunctionsSpec extends FeatureSpec with Matchers with BeforeAndAfte
       val registrations: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_registrations/")
       registrations.columns.length shouldBe 6
       registrations.count() shouldBe 100
-      registrations.head() shouldBe Row(
-        150, 123, "Klaus Peter", true, "en", "Klaus Peter mag Bausparverträge")
+      registrations.drop("timestamp").head() shouldBe Row(
+        150, "Klaus Peter", true, "en", "Klaus Peter mag Bausparverträge")
 
       val tweets: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_tweets")
       tweets.columns.length shouldBe 9
       tweets.count() shouldBe 100
-      tweets.head() shouldBe Row(150, 123, 150, "A test tweet", 123, "www.example.com", 149, 151, "en")
+      tweets.drop("timestamp").drop("created_at").head() shouldBe
+        Row(150, 150, "A test tweet", "www.example.com", 149, 151, "en")
     }
   }
 

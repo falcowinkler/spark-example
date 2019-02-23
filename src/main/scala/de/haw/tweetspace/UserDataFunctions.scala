@@ -1,9 +1,10 @@
 package de.haw.tweetspace
 
 import org.apache.hadoop.fs.Path
+import org.apache.spark.sql.DataFrame
 
-class UserDataFunctions {
-  def readAvroDataset(path: Path): Unit = {
-
+object UserDataFunctions {
+  def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
+    tweetData.join(registrationData, "twitter_user_id")
   }
 }
