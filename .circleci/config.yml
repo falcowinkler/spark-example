@@ -40,3 +40,46 @@ jobs:
       - attach_workspace:
           at: ~/
       - run: ./gradlew check
+
+  build-jar:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/openjdk:8-jdk
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run: gradle shadowJar
+      - persist_to_workspace:
+          root: ~/
+          paths:
+            - ./repo
+
+  dockerize:
+    working_directory: ~/repo
+    machine: true
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run: ls -la
+      - run: docker login -u $DOCKER_USER -p $DOCKER_PASS
+      - run: docker build -t falcowinkler/spark-example:$CIRCLE_BRANCH .
+      - run: docker push falcowinkler/spark-example:$CIRCLE_BRANCH
+
+
+workflows:
+  version: 2
+  build-test:
+    jobs:
+      - checkout
+      - dependencies:
+          requires:
+            - checkout
+      - unit-test:
+          requires:
+            - dependencies
+      - build-jar:
+          requires:
+            - unit-test
+      - dockerize:
+          requires:
+            - build-jar
