@@ -1,4 +1,5 @@
 package de.haw.tweetspace
+
 import com.typesafe.config.{Config, ConfigFactory}
 
 object AppConfig {

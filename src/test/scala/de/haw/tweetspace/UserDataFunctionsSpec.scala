@@ -1,35 +1,40 @@
 package de.haw.tweetspace
 
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.joda.time.{DateTime, DateTimeZone}
-import org.scalatest._
+import org.apache.spark.sql.SparkSession
+import org.scalatest.{BeforeAndAfterAll, FeatureSpec, Matchers}
 
 class UserDataFunctionsSpec extends FeatureSpec with Matchers with BeforeAndAfterAll {
-  feature("Load data from avro files") {
-    scenario("load user and registration data") {
-      val spark: SparkSession = SparkSession.builder
-        .appName("test")
-        .master("local")
-        .getOrCreate()
+  val spark: SparkSession = SparkSession.builder
+    .appName("test")
+    .master("local")
+    .getOrCreate()
+  import spark.implicits._
 
-      TestTools.createUserData()
 
-      val registrations: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_registrations/")
-      registrations.columns.length shouldBe 6
-      registrations.count() shouldBe 100
-      registrations.drop("timestamp").head() shouldBe Row(
-        150, "Klaus Peter", true, "en", "Klaus Peter mag Bausparverträge")
-
-      val tweets: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_tweets")
-      tweets.columns.length shouldBe 9
-      tweets.count() shouldBe 100
-      tweets.drop("timestamp").drop("created_at").head() shouldBe
-        Row(150, 150, "A test tweet", "www.example.com", 149, 151, "en")
+  feature("Join functions") {
+    scenario("join tweets and registrations") {
+      val testRegistrations =
+        Seq((1L, "A", 10), (2L, "A", 5), (3L, "B", 56))
+          .toDF("twitter_user_id", "username", "some_other_data")
+      val testTweets = Seq((1L, "bla"), (2L, "blubb"), (3L, "foo"))
+        .toDF("twitter_user_id", "tweetcontent")
+      val expected =
+        Seq((1L, "bla", "A", 10), (2L, "blubb", "A", 5), (3L, "foo", "B", 56))
+          .toDF("twitter_user_id", "tweetcontent", "username", "some_other_data")
+      val actual = UserDataFunctions.join(testTweets, testRegistrations)
+      actual.schema shouldBe expected.schema
+      actual.show()
+      expected.intersect(actual).count() shouldBe 3 // All three rows were equal
     }
   }
+  feature("creates an avro column ") {
+    scenario("gets joined data frame and appends extra column with friend reccomendation avro record") {
+      val testData =
+        Seq((1L, 2L, "Klaus"), (1L, 4L, "Peter"),(3L, 5L, "Sigfried"))
+          .toDF("twitter_user_id", "in_reply_to_twitter_user_id", "name")
+      val expected = UserDataFunctions.mapToKafkaProducerRecord(testData)
+      expected.schema.length shouldBe 2
+    }
 
-  override def afterAll(): Unit = {
-    TestTools.clearUserData()
   }
-
 }

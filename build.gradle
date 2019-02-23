@@ -21,9 +21,13 @@ dependencies {
     compile "com.typesafe.scala-logging:scala-logging_$scalaVersion:3.9.0"
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.typesafe:config:1.3.3'
-    compile 'de.haw.tweetspace:avro-events:1.0.1'
+    compile 'de.haw.tweetspace:avro-events:1.0.5'
     compile "org.apache.spark:spark-avro_$scalaVersion:2.4.0"
-    
+    compile "org.apache.spark:spark-sql-kafka-0-10_$scalaVersion:2.4.0"
+    compile ('io.confluent:kafka-avro-serializer:4.1.2') {
+        exclude group:"com.fasterxml.jackson.core"
+    }
+
     testCompile 'org.pegdown:pegdown:1.1.0'
     testCompile "org.scalatest:scalatest_$scalaVersion:3.0.5"
 }
@@ -35,6 +39,9 @@ repositories {
     jcenter()
     maven {
         url = "https://clojars.org/repo"
+    }
+    maven  {
+        url = "https://packages.confluent.io/maven/"
     }
 }
 
