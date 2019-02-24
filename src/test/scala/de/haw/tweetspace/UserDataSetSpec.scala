@@ -3,6 +3,7 @@ package de.haw.tweetspace
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
 import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest._
+import org.apache.spark.sql.functions._
 
 class UserDataSetSpec extends FeatureSpec with Matchers with BeforeAndAfterAll {
   feature("Load data from avro files") {
@@ -17,8 +18,8 @@ class UserDataSetSpec extends FeatureSpec with Matchers with BeforeAndAfterAll {
       val registrations: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_registrations/")
       registrations.columns.length shouldBe 6
       registrations.count() shouldBe 100
-      registrations.drop("timestamp").head() shouldBe Row(
-        150, "Klaus Peter", true, "en", "Klaus Peter mag Bausparverträge")
+      registrations.drop("timestamp").orderBy(asc("twitter_user_id")).head() shouldBe
+        Row(100, "Klaus Peter", true, "en", "Klaus Peter mag Bausparverträge")
 
       val tweets: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_tweets")
       tweets.columns.length shouldBe 9
