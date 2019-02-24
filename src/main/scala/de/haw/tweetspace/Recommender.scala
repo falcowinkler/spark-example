@@ -17,7 +17,6 @@ object Recommender extends LazyLogging {
     val registrations = UserDataSet.load(spark, basePath + "gobblin-kafka-avro/job-output/user_registrations")
       .select("twitter_user_id", "name")
     val joined = UserDataFunctions.join(tweets, registrations)
-    val kafkaProducerReady = UserDataFunctions.mapToKafkaProducerRecord(joined)
-    UserDataFunctions.publishToKafka(kafkaProducerReady)
+    UserDataFunctions.publishToKafkaAbris(joined)
   }
 }
