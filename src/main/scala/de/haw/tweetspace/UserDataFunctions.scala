@@ -6,6 +6,7 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, Row}
 import org.joda.time.DateTime
+import org.apache.spark.sql.avro._
 
 object UserDataFunctions {
   def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
