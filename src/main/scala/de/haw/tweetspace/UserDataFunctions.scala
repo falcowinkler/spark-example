@@ -1,25 +1,45 @@
 package de.haw.tweetspace
 
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+
 import de.haw.tweetspace.avro.FriendReccomendation
 import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
-import io.confluent.kafka.serializers.KafkaAvroSerializer
+import org.apache.avro.file.DataFileWriter
+import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DataTypes, StructType}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.joda.time.DateTime
-import za.co.absa.abris.avro.read.confluent.SchemaManager
-import za.co.absa.abris.avro.AvroSerDe._
-import java.sql.Timestamp
-import java.time.LocalDateTime
-
 
 object UserDataFunctions {
+  private val MAGIC_BYTE = 0
+  val idSize = 4
+
   def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
     tweetData.join(registrationData, "twitter_user_id")
   }
 
+  // There are cool libraries for this but only for scala 2.11 :(
+  // And i want to stay on 2.12 because i am to lazy to rebuild the spark docker image
+  def toAvro(reccomendation: FriendReccomendation, id: Int): Array[Byte] = {
+    val out = new ByteArrayOutputStream()
+    out.write(MAGIC_BYTE)
+    out.write(ByteBuffer.allocate(idSize).putInt(id).array)
+    val userDatumWriter = new SpecificDatumWriter[FriendReccomendation](classOf[FriendReccomendation])
+    val dataFileWriter = new DataFileWriter[FriendReccomendation](userDatumWriter)
+    dataFileWriter.create(FriendReccomendation.getClassSchema, out)
+    dataFileWriter.append(reccomendation)
+    dataFileWriter.close()
+    out.toByteArray
+  }
+
   def mapToKafkaProducerRecord(joinedDataFrame: DataFrame): DataFrame = {
+    val registryClient = new CachedSchemaRegistryClient(
+      AppConfig.value("schema_registry.url").get,
+      256)
+    val id = registryClient.register("friend_recommendations-value", FriendReccomendation.getClassSchema)
     // Spark needs a row encoder for data serialization.
     // Here we explicitly state that we want the map function to produce a BinaryType
     var structType = new StructType
@@ -33,13 +53,7 @@ object UserDataFunctions {
         .setReccomendationReceiverName(row.getString(2))
         .setMatchPercentage(0.5F)
         .setTimestamp(DateTime.now()).build()
-      // TODO: schema caching
-      val registryClient = new CachedSchemaRegistryClient(
-        AppConfig.value("schema_registry.url").get,
-        256)
-      val serializer = new KafkaAvroSerializer(registryClient)
-      registryClient.register("friend_recommendations-value", specificRecord.getSchema)
-      Row(serializer.serialize("friend_recommendations", specificRecord))
+      Row(toAvro(specificRecord, id))
     }
 
     joinedDataFrame
@@ -55,29 +69,6 @@ object UserDataFunctions {
       format("kafka")
       .option("kafka.bootstrap.servers", AppConfig.value("kafka.bootstrap_servers").get)
       .option("topic", "friend_recommendations")
-      .save()
-  }
-
-  def publishToKafkaAbris(joinedDataFrame: DataFrame): Unit = {
-    val schemaRegistryConfs = Map(
-      SchemaManager.PARAM_SCHEMA_REGISTRY_URL -> AppConfig.value("schema_registry.url").get,
-      SchemaManager.PARAM_VALUE_SCHEMA_NAMING_STRATEGY -> SchemaManager.SchemaStorageNamingStrategies.TOPIC_NAME
-    )
-    val topic = "friend_recommendations"
-    // map to avro record
-    val df = joinedDataFrame.select("twitter_user_id", "in_reply_to_twitter_user_id", "name")
-      .withColumn("match_percentage", lit(0.5))
-      .withColumn("timestamp", lit(Timestamp.valueOf(LocalDateTime.now())))
-      .withColumnRenamed("name", "reccomendation_receiver_name")
-      .withColumnRenamed("in_reply_to_twitter_user_id", "reccomended_twitter_user_id")
-      .withColumnRenamed("twitter_user_id", "reccomendation_receiver_twitter_user_id")
-
-    df
-      .toConfluentAvro(topic, "FriendReccomendation", "de.haw.tweetspace.avro")(schemaRegistryConfs)
-      .write
-      .format("kafka")
-      .option("kafka.bootstrap.servers", AppConfig.value("kafka.bootstrap_servers").get)
-      .option("topic", topic)
       .save()
   }
 

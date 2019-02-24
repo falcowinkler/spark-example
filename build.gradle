@@ -27,9 +27,6 @@ dependencies {
     compile ('io.confluent:kafka-avro-serializer:4.1.2') {
         exclude group:"com.fasterxml.jackson.core"
     }
-    compile (group: 'za.co.absa', name: 'abris_2.11', version: '2.2.2') {
-        exclude group:"com.fasterxml.jackson.core"
-    }
     testCompile 'org.pegdown:pegdown:1.1.0'
     testCompile "org.scalatest:scalatest_$scalaVersion:3.0.5"
 }
