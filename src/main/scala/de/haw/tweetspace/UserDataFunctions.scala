@@ -15,8 +15,6 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.joda.time.DateTime
 
 object UserDataFunctions {
-  private val MAGIC_BYTE = 0
-  val idSize = 4
 
   def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
     tweetData.join(registrationData, "twitter_user_id")
@@ -25,6 +23,8 @@ object UserDataFunctions {
   // There are cool libraries for this but only for scala 2.11 :(
   // And i want to stay on 2.12 because i am to lazy to rebuild the spark docker image
   def toAvro(reccomendation: FriendReccomendation, id: Int): Array[Byte] = {
+    val MAGIC_BYTE = 0
+    val idSize = 4
     val out = new ByteArrayOutputStream()
     out.write(MAGIC_BYTE)
     out.write(ByteBuffer.allocate(idSize).putInt(id).array)
