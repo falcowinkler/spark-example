@@ -1,7 +1,6 @@
 package de.haw.tweetspace
 
 import org.apache.spark.sql.{DataFrame, Row, SparkSession}
-import org.joda.time.{DateTime, DateTimeZone}
 import org.scalatest._
 import org.apache.spark.sql.functions._
 

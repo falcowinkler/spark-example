@@ -7,6 +7,7 @@ import de.haw.tweetspace.avro.FriendReccomendation
 import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.specific.SpecificDatumWriter
+import org.apache.spark.broadcast.Broadcast
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types.{DataTypes, StructType}
@@ -35,8 +36,8 @@ object UserDataFunctions {
     out.toByteArray
   }
 
-  def mapToKafkaProducerRecord(joinedDataFrame: DataFrame, registryClient: SchemaRegistryClient): DataFrame = {
-    val id = registryClient.register("friend_recommendations-value", FriendReccomendation.getClassSchema)
+  def mapToKafkaProducerRecord(joinedDataFrame: DataFrame, schemaId: Broadcast[Int]): DataFrame = {
+
     // Spark needs a row encoder for data serialization.
     // Here we explicitly state that we want the map function to produce a BinaryType
     var structType = new StructType
@@ -50,7 +51,7 @@ object UserDataFunctions {
         .setReccomendationReceiverName(row.getString(2))
         .setMatchPercentage(0.5F)
         .setTimestamp(DateTime.now()).build()
-      Row(toAvro(specificRecord, id))
+      Row(toAvro(specificRecord, schemaId.value))
     }
 
     joinedDataFrame
