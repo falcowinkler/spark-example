@@ -20,22 +20,6 @@ object UserDataFunctions {
     tweetData.join(registrationData, "twitter_user_id")
   }
 
-  // There are cool libraries for this but only for scala 2.11 :(
-  // And i want to stay on 2.12 because i am to lazy to rebuild the spark docker image
-  def toAvro(reccomendation: FriendReccomendation, id: Int): Array[Byte] = {
-    val MAGIC_BYTE = 0
-    val idSize = 4
-    val out = new ByteArrayOutputStream()
-    out.write(MAGIC_BYTE)
-    out.write(ByteBuffer.allocate(idSize).putInt(id).array)
-    val userDatumWriter = new SpecificDatumWriter[FriendReccomendation](classOf[FriendReccomendation])
-    val dataFileWriter = new DataFileWriter[FriendReccomendation](userDatumWriter)
-    dataFileWriter.create(FriendReccomendation.getClassSchema, out)
-    dataFileWriter.append(reccomendation)
-    dataFileWriter.close()
-    out.toByteArray
-  }
-
   def mapToKafkaProducerRecord(joinedDataFrame: DataFrame, schemaId: Broadcast[Int]): DataFrame = {
 
     // Spark needs a row encoder for data serialization.
@@ -51,7 +35,17 @@ object UserDataFunctions {
         .setReccomendationReceiverName(row.getString(2))
         .setMatchPercentage(0.5F)
         .setTimestamp(DateTime.now()).build()
-      Row(toAvro(specificRecord, schemaId.value))
+      val MAGIC_BYTE = 0
+      val idSize = 4
+      val out = new ByteArrayOutputStream()
+      out.write(MAGIC_BYTE)
+      out.write(ByteBuffer.allocate(idSize).putInt(schemaId.value).array)
+      val userDatumWriter = new SpecificDatumWriter[FriendReccomendation](classOf[FriendReccomendation])
+      val dataFileWriter = new DataFileWriter[FriendReccomendation](userDatumWriter)
+      dataFileWriter.create(FriendReccomendation.getClassSchema, out)
+      dataFileWriter.append(specificRecord)
+      dataFileWriter.close()
+      Row(out.toByteArray)
     }
 
     joinedDataFrame
