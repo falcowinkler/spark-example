@@ -24,8 +24,8 @@ class UserDataSetSpec extends FeatureSpec with Matchers with BeforeAndAfterAll {
       val tweets: DataFrame = UserDataSet.load(spark, "src/test/resources/gobblin-kafka-avro/job-output/user_tweets")
       tweets.columns.length shouldBe 9
       tweets.count() shouldBe 100
-      tweets.drop("timestamp").drop("created_at").head() shouldBe
-        Row(150, 150, "A test tweet", "www.example.com", 149, 151, "en")
+      tweets.drop("timestamp").orderBy(asc("twitter_user_id")).drop("created_at").head() shouldBe
+        Row(100, 200, "A test tweet", "www.example.com", 199, 101, "en")
     }
   }
 
