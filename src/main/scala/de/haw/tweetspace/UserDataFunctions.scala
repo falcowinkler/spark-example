@@ -10,6 +10,9 @@ import org.apache.spark.sql.{DataFrame, Row}
 import org.joda.time.DateTime
 import za.co.absa.abris.avro.read.confluent.SchemaManager
 import za.co.absa.abris.avro.AvroSerDe._
+import java.sql.Timestamp
+import java.time.LocalDateTime
+
 
 object UserDataFunctions {
   def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
@@ -64,7 +67,7 @@ object UserDataFunctions {
     // map to avro record
     val df = joinedDataFrame.select("twitter_user_id", "in_reply_to_twitter_user_id", "name")
       .withColumn("match_percentage", lit(0.5))
-      .withColumn("timestamp", lit(DateTime.now()))
+      .withColumn("timestamp", lit(Timestamp.valueOf(LocalDateTime.now())))
       .withColumnRenamed("name", "reccomendation_receiver_name")
       .withColumnRenamed("in_reply_to_twitter_user_id", "reccomended_twitter_user_id")
       .withColumnRenamed("twitter_user_id", "reccomendation_receiver_twitter_user_id")
