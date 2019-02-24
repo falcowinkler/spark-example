@@ -19,6 +19,10 @@ object UserDataFunctions {
     structType = structType.add("value", DataTypes.BinaryType, false)
     val encoder = RowEncoder(structType)
 
+    val registryClient = new CachedSchemaRegistryClient(
+      AppConfig.value("schema_registry.url").get,
+      256)
+
     def getValues(row: Row): Row = {
       val specificRecord = FriendReccomendation.newBuilder
         .setReccomendationReceiverTwitterUserId(row.getLong(0))
@@ -26,9 +30,6 @@ object UserDataFunctions {
         .setReccomendationReceiverName(row.getString(2))
         .setMatchPercentage(0.5F)
         .setTimestamp(DateTime.now()).build()
-      val registryClient = new CachedSchemaRegistryClient(
-        AppConfig.value("schema_registry.url").get,
-        10000)
       val serializer = new KafkaAvroSerializer(registryClient)
       registryClient.register("friend_recommendations-value", specificRecord.getSchema)
       Row(serializer.serialize("friend_recommendations", specificRecord))
