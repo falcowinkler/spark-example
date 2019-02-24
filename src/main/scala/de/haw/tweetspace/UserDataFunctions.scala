@@ -6,7 +6,6 @@ import io.confluent.kafka.serializers.KafkaAvroSerializer
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, Row}
 import org.joda.time.DateTime
-import org.apache.spark.sql.avro._
 
 object UserDataFunctions {
   def join(tweetData: DataFrame, registrationData: DataFrame): DataFrame = {
@@ -34,7 +33,9 @@ object UserDataFunctions {
       registryClient.register("friend_recommendations-value", specificRecord.getSchema)
       Row(serializer.serialize("friend_recommendations", specificRecord))
     }
-    joinedDataFrame.map(getValues, encoder)
+
+    joinedDataFrame.filter(col("in_reply_to_twitter_user_id").isNotNull)
+      .map(getValues, encoder)
       .withColumn("key", lit(""))
   }
 
