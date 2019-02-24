@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.ByteBuffer
 
 import de.haw.tweetspace.avro.FriendReccomendation
-import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
+import io.confluent.kafka.schemaregistry.client.{CachedSchemaRegistryClient, SchemaRegistryClient}
 import org.apache.avro.file.DataFileWriter
 import org.apache.avro.specific.SpecificDatumWriter
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
@@ -35,10 +35,7 @@ object UserDataFunctions {
     out.toByteArray
   }
 
-  def mapToKafkaProducerRecord(joinedDataFrame: DataFrame): DataFrame = {
-    val registryClient = new CachedSchemaRegistryClient(
-      AppConfig.value("schema_registry.url").get,
-      256)
+  def mapToKafkaProducerRecord(joinedDataFrame: DataFrame, registryClient: SchemaRegistryClient): DataFrame = {
     val id = registryClient.register("friend_recommendations-value", FriendReccomendation.getClassSchema)
     // Spark needs a row encoder for data serialization.
     // Here we explicitly state that we want the map function to produce a BinaryType

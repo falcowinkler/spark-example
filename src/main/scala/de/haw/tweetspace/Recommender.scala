@@ -1,6 +1,7 @@
 package de.haw.tweetspace
 
 import com.typesafe.scalalogging.LazyLogging
+import io.confluent.kafka.schemaregistry.client.CachedSchemaRegistryClient
 import org.apache.spark.sql.SparkSession
 
 object Recommender extends LazyLogging {
@@ -17,7 +18,10 @@ object Recommender extends LazyLogging {
     val registrations = UserDataSet.load(spark, basePath + "gobblin-kafka-avro/job-output/user_registrations")
       .select("twitter_user_id", "name")
     val joined = UserDataFunctions.join(tweets, registrations)
-    val kafkaProducerReady = UserDataFunctions.mapToKafkaProducerRecord(joined)
+    val registryClient = new CachedSchemaRegistryClient(
+      AppConfig.value("schema_registry.url").get,
+      256)
+    val kafkaProducerReady = UserDataFunctions.mapToKafkaProducerRecord(joined, registryClient)
     UserDataFunctions.publishToKafka(kafkaProducerReady)
   }
 }

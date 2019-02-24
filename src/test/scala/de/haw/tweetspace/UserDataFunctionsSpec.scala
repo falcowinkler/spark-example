@@ -34,7 +34,7 @@ class UserDataFunctionsSpec extends FeatureSpec with Matchers with BeforeAndAfte
       val testData =
         Seq((1L, 2L, "Klaus"), (1L, 4L, "Peter"),(3L, 5L, "Sigfried"))
           .toDF("twitter_user_id", "in_reply_to_twitter_user_id", "name")
-      val expected = UserDataFunctions.mapToKafkaProducerRecord(testData)
+      val expected = UserDataFunctions.mapToKafkaProducerRecord(testData, new MockRegistryClient)
       expected.schema.length shouldBe 2
     }
     scenario("in_reply is null") {
@@ -44,7 +44,7 @@ class UserDataFunctionsSpec extends FeatureSpec with Matchers with BeforeAndAfte
           (1L, new java.lang.Long(123), "Peter"),
           (3L,  null.asInstanceOf[java.lang.Long], "Sigfried"))
           .toDF("twitter_user_id", "in_reply_to_twitter_user_id", "name")
-      val expected = UserDataFunctions.mapToKafkaProducerRecord(testData)
+      val expected = UserDataFunctions.mapToKafkaProducerRecord(testData, new MockRegistryClient)
       expected.schema.length shouldBe 2
     }
   }
